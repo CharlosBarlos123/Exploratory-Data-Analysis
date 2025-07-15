@@ -1,0 +1,405 @@
+---
+title: "Final Exam"
+author: "Charles Colucy"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+## Question 1
+
+You are analyzing a subset of the Dutch Growth Study that contains height data of boys from multiple regions in the Netherlands. The data includes the variables age (age in years), hgt (height in cm), and reg (region). You are interested in understanding whether there is a difference in average height between the “north” and “south” regions.
+The data set is available as a CSV file dutch_boys.csv.
+
+### Part A
+
+Read in the dataset and create a new data frame that contains only observations from the “north” and “south” regions. Moreover, remove all rows that have a missing value. Report the number of observations by region. Then, create a scatter plot of height versus age, where points are colored by region. Label all elements of the plot clearly. Interpret the plot.
+
+```{r}
+# Read in Data
+boys <- read.csv("C:/Users/charl/Desktop/SP 25 - Last Semester!!!/Stats 4302/Final Exam/dutch_boys.csv", header = T)
+
+# Omit the observations that contain NAs
+boys <- na.omit(boys)
+
+# Create subsets of the data -> one for north; the other for south
+north <- boys[boys$reg == "north",]
+south <- boys[boys$reg == "south",]
+cat("There are ", nrow(north), " observations from the north, and ", nrow(south), " observations from the south")
+```
+
+```{r}
+# Create the combined data set and graph
+combined <- rbind(north, south)
+plot(combined$hgt, combined$age, pch = 20, col = c("red", "blue"))
+legend("topleft", legend = levels(as.factor(combined$reg)), col = c("red", "blue"), pch = 20)
+```
+
+We see that the scatter plot shows us that the relationship between height and age is not linear, as we would expect. I notice that before a certain age, height seems to be generally uniform, with very little deviation from the expected height at that age. After about 4 years of age, we see an increasing amount of variability in height as age increases. We expect this to be so, because during growth spurts, some boys may grow more than others, causing variability in the height of the boys. Additionally, we see no real trends that show differences between the north and the south regions.
+
+### Part B
+
+For the remainder of this question, restrict your analysis to children aged 10 years or older. Use a permutation test based on the Kolmogorov–Smirnov (KS) statistic to assess whether the age distributions in the two regions (north and south) are comparable.
+
+```{r}
+y10 <- boys[boys$age >= 10,]
+```
+
+
+Clearly state the null and alternative hypotheses.
+Let $F_n$ be the CDF for northern boys distribution and $F_s$ be for the southern boys. Additionally, let $\hat{F_n}$ and $\hat{F_s}$ be the empirical CDF respectively. Then,
+
+$$
+H_0:\hat{F_n} = \hat{F_s}
+$$
+$$
+H_1:\hat{F_n} \ne \hat{F_s}
+$$
+
+Report the observed KS test statistic.
+
+```{r}
+north.age <- north$age
+south.age <- south$age
+z.age <- c(north.age, south.age)
+m <- length(north.age)
+n <- length(south.age)
+
+permute.D <- function(z, m, n) {
+  z.star <- sample(z.age)
+  north.star <- z.star[1:m]
+  south.star <- z.star[(m+1):(m+n)]
+  D <- ks.test(north.star, south.star)$statistic
+  return(D)
+}
+
+K <- 1000
+D.samples <- replicate(K, permute.D(z.age, m, n))
+
+D.obs <- ks.test(north.age, south.age)$statistic
+
+cat("Observed test statistic: ", D.obs)
+```
+
+Compute and report the estimated p-value, along with a 95% confidence interval for the p-value, based on the permutation test.
+
+```{r}
+pval <- mean(D.samples >= D.obs)
+
+cat("With a p-value of ", pval, " we reject the null hypothesis in favor of the alternative.")
+```
+
+95% Confidence Interval for p-value: [0.025 percentile, 0.975 percentile]
+
+```{r}
+permute.P <- function(z, m, n, K = 1000) {
+  D.samps <- replicate(K, permute.D(z, m, n))
+  num_above <- sum(D.samps >= abs(D.obs))
+  num_below <- sum(D.samps <= -abs(D.obs))
+  return((num_above+num_below+1)/(K+1))
+}
+
+p.dist <- replicate(100, permute.P(z.age, m, n, 500))
+quants <- quantile(p.dist, c(0.025, 0.975))
+cat("The 95% confidence interval for the p-value is:", quants)
+```
+
+Provide a brief interpretation of your result in words.
+
+According to the data, we can reject the null hypothesis that the empirical CDF of the age of boys over 10 years old in the southern region and the age of the boys over 10 years old in the northern region are the same. Instead, we conclude that the data supports that the distributions of the two regions' ages over 10 are not comparable and they follow different distributions.
+
+### Part C
+
+Calculate a 95% bootstrap confidence interval for the difference (north minus south) of the means of the height distributions. Make sure to produce a histogram of your bootstrap sampling distribution that clearly indicates the observed difference in means and a 95% confidence interval.
+Answer the question of whether the average heights in the two regions differ. Write down your conclusion in words.
+
+$$
+H_0:\mu_n-\mu_s=0 
+$$
+$$
+H_1:\mu_n-\mu_s \ne 0 
+$$
+
+```{r}
+# Initialize the bootstrap difference of means estimator vector
+B <- 1000
+boot.means <- rep(NA, B)
+
+# Bootstrap algorithm
+for (i in 1:B) {
+  boot.means[i] <- mean(sample(north$hgt, replace = T)) - mean(sample(south$hgt, replace = T))
+}
+
+quants <- quantile(boot.means, c(0.025, 0.975))
+
+cat("The 95% Bootstrap Confidence Interval for the difference of means of height is: [", quants[[1]], ",", quants[[2]], "]")
+```
+
+
+## Question 2
+
+You are analyzing daily EUR/USD exchange rate data from February 4 to April 15. Let $R_t = log(Y_t)-log(Y_{t-1})$ denote the log return (i.e., the difference of the log exchange rate) on trading day $t$, where $Y_t$ is the exchange rate on day $t$. In this exercise, you will work with the standardized log returns, which are obtained by subtracting the sample mean and dividing by the sample standard deviation of the log returns. That is, the data you analyze will be...
+
+$$
+X_t = \frac{R_t-R}{s_R}
+$$
+
+Where $R$ is the sample mean and $s_R$ is the sample standard deviation of $R_t$. Note that $t$ increases only on trading days, so weekends and holidays are skipped. The objective of this exercise is to assess whether there is evidence of a structural change in the dynamics of the log returns on April 2. To investigate this, you will compare two models. Under the assumption of weak form market efficiency, both models assume a $X_t$ is driven by a white noise process but one model allows for a structural break.
+
+Throughout this analysis, we treat the data as a regular time series and ignore potential irregularities in the actual timing of observations due to weekends and holidays.
+
+The dataset is available as the CSV file eurusdlr.csv and contains the variables eurusd (exchange rate, $Y_t$), lr_std (standardized log return, $X_t$), date (the date in the format YYYY-mm-dd) and t (time point $t$ of the time series, starting with $t$ = 1).
+
+#### Model 1
+
+In Model 1, $X_t$ follows a normal white noise process
+
+$$
+X_t \sim N(0, \sigma^2)
+$$
+
+with parameter $\sigma^2 > 0$
+
+#### Model 2
+
+Model 2 allows for a change point at April 2, such that the innovation variance may differ before and after the break. Let $t_b$ denote the time point corresponding to April 2. Then we define the process with change point as
+
+$$
+X_t \sim \begin{cases} N(0, \sigma_1^2),  t<t_b, \\ N(0, \sigma^2_2), t \ge t_b \end{cases}
+$$
+
+with parameters $\sigma^2 > 0$
+
+### Part A
+
+Load and plot the time series of standardized log returns. In the plot, label the x-axis with
+the dates and indicate April 2 in the plot.
+
+```{r}
+# Load in the data set
+exch <- read.csv("C:/Users/charl/Desktop/SP 25 - Last Semester!!!/Stats 4302/Final Exam/eurusdlr.csv")
+
+# Convert the date column to 
+exch$date <- as.Date(exch$date)
+
+plot(exch$date, exch$lr_std, type = "l", xlab = "Date", ylab = "Standardized Log Return")
+abline(v = as.Date("2025-04-02"), col = "red")
+text(x = as.Date("2025-04-02"), y = 3,
+     labels = "April 2", pos = 3, col = "red")
+```
+
+
+### Part B
+
+Using mathematical notation, derive the log-likelihood function for Model 1.
+
+$$
+f(X_t) = \frac{1}{\sqrt{2\pi}\sigma}e^{-\frac{x^2}{2\sigma^2}}
+$$
+$$
+f(\sigma^2|X_t) = \prod^n_{i=1}\frac{1}{\sqrt{2\pi}\sigma}e^{-\frac{x_i^2}{2\sigma^2}} = (\frac{1}{\sqrt{2\pi}\sigma})^n[\prod^n_{i=1}e^{-\frac{x_i^2}{2\sigma^2}}]=(\frac{1}{\sqrt{2\pi}\sigma})^ne^{-\sum ^n_{i=1}\frac{x_i^2}{2\sigma^2}}
+$$
+$$
+L(\sigma^2|X_t) = (\frac{1}{\sqrt{2\pi}\sigma})^ne^{-\sum ^n_{i=1}\frac{x_i^2}{2\sigma^2}} \Longrightarrow l(\sigma^2|X_t) =log((2\pi\sigma^2)^{-n/2}e^{-\sum ^n_{i=1}\frac{x_i^2}{2\sigma^2}})=-\frac{n}{2}log(2\pi\sigma^2)-\sum_{i=1}^n\frac{x_i^2}{2\sigma^2}
+$$
+$$
+l(\sigma^2|X_t) = -\frac{n}{2}log(2\pi\sigma^2)-\sum_{i=1}^n\frac{x_i^2}{2\sigma^2}
+$$
+
+
+### Part C
+
+Write an R function to compute the negative log-likelihood for the Model 1. Use optim() to estimate the parameter $\sigma^2$. As a starting value, use the sample variance for $\sigma^2$.
+Report the estimated parameter as well as the log-likelihood value $l_1$ at the maximum likelihood estimate (MLE).
+
+```{r}
+# Condense standardized log return to a time series object
+X <- exch$lr_std
+
+# Negative Log-likelihood calculation
+Loglike_1 <- function(x, s) {
+  n <- length(x)
+  
+  # protect against invalid sigma
+  if (s <= 0) return(Inf)
+  l_sigma_pos <- -n/2*log(2*pi*s^2) - sum(x^2)/(2 * s^2)
+  l_sigma <- -1*l_sigma_pos
+  return(l_sigma)
+}
+
+# Starting value for optim function
+s2_x <- var(X)
+
+ML <- optim(par = s2_x, fn = Loglike_1, x = X, method = "Brent", lower = 0.0001, upper = 10)
+sigma_est <- ML$par
+Lval1 <- -ML$value
+
+cat("MLE estimate of sigma:", sigma_est, "\n")
+cat("Value of negative log-likelihood:", Lval1, "\n")
+```
+
+Quick sanity check...
+
+```{r}
+Xvec <- seq(0.1, 10, length.out = 100)
+loglik <- sapply(Xvec, function(s) Loglike_1(X, s))
+
+plot(Xvec, loglik, type = "l", col = "skyblue2")
+abline(v = sigma_est)
+```
+
+
+### Part D
+
+Using mathematical notation, derive the log-likelihood function log $L(\sigma_1^2, \sigma_2^2)$ for Model 2.
+
+The two portions of the pdf may be bounded and do not intersect, but they are connected sets, so we can treat both as pdfs as such that span the sample space of the variable t.
+Following this logic, finding the likelihood of both $\sigma_1^2$ and $\sigma_2^2$ given x is straightforward.
+
+$$
+L(\sigma_1^2, \sigma_2^2|x_i) = \prod_{i=1}^{t_b}f(x_i|\sigma_1^2)\cdot \prod^n_{i=t_b+1}f(x_i|\sigma_2^2) \Longrightarrow log L(\sigma_1^2, \sigma_2^2|x_i) = \sum_{i=1}^{t_b}log(f(x_i|\sigma_1^2))+\sum^n_{i=t_b+1}log(f(x_i|\sigma_2^2))
+$$
+Where we have that:
+
+$$
+log(f(x_i|\sigma_1^2)) = -\frac{n}{2}log(2\pi\sigma_1^2) - \sum_{i=1}^{t_b} \frac{-x_i^2}{2\sigma_1^2} = \sum_{i=1}^{t_b}[-\frac{1}{2}log(2\pi\sigma_1^2)-\frac{x_i^2}{2\sigma_1^2})]
+$$
+And
+
+$$
+log(f(x_i|\sigma_2^2)) = -\frac{n}{2}log(2\pi\sigma_2^2)-\sum^n_{i=t_b+1}\frac{-x_i^2}{2\sigma_2^2} = \sum^n_{i=t_b+1}[-\frac{1}{2}log(2\pi\sigma_2^2)-\frac{x_i^2}{2\sigma_2^2})]
+$$
+
+So together, we have the complete log-likelihood:
+
+$$
+l(\sigma_1^2, \sigma_2^2|x) = \sum_{i=1}^{t_b}[-\frac{1}{2}log(2\pi\sigma_1^2)-\frac{x_i^2}{2\sigma_1^2})]+\sum^n_{i=t_b+1}[-\frac{1}{2}log(2\pi\sigma_2^2)-\frac{x_i^2}{2\sigma_2^2})]
+$$
+
+
+### Part E
+
+Write an R function to compute the negative log-likelihood for the Model 2. Use optim() to estimate the parameters $\sigma^2_1$ and $\sigma^2_2$. As starting values, use the estimate from Model 1 obtained in (c); in particular, start with $\sigma^2_1=\sigma^2_2=\hat{\sigma^2}$
+
+Report your estimated parameters as well as the log-likelihood value $l_2$ at the MLE and
+interpret the estimated parameters.
+
+```{r}
+# Log-likelihood calculation
+Loglike_2 <- function(x, par, tb = 43) {
+  s1 <- par[1]
+  s2 <- par[2]
+  
+  # split up the data sets
+  X_1 <- X[1:tb]
+  X_2 <- X[(tb+1):length(X)]
+  
+  # protect against invalid sigma
+  if (s1 <= 0 | s2 <= 0) return(Inf)
+  
+  # negative log likelihood calculation
+  l_sigma <- -(sum(-1/2*log(2*pi*s1^2)-X_1^2/(2*s1^2))+sum(-1/2*log(2*pi*s2^2)-X_2^2/(2*s2^2)))
+  return(l_sigma)
+}
+
+start_vals <- c(var(X), var(X))
+
+ML <- optim(par = start_vals, fn = Loglike_2, x = X, method = "L-BFGS-B", lower = c(0.0001, 0.0001))
+
+sigma_est1 <- ML[[1]][1]
+sigma_est2 <- ML[[1]][2]
+Lval2 <- -ML$value
+
+cat("MLE estimate of sigma_1 is:", sigma_est1, " and the estimate for sigma_2 is:", sigma_est2, "\n")
+cat("Value of negative log-likelihood:", Lval2, "\n")
+```
+
+
+### Part F
+
+Use a likelihood ratio (LR) test to test whether introducing the break significantly improves model fit.
+Recall,
+
+$$
+LR = 2(l_2-l_1), LR \sim \chi^2_k
+$$
+
+where $\chi^2_k$ denotes the Chi-square distribution with k degrees of freedom and k is the difference in number of model parameters.
+
+Clearly state the null and alternative hypotheses.
+
+$$
+H_0: \sigma_1^2 = \sigma_2^2 \\\\ H_1: \sigma_1^2\ne\sigma_2^2
+$$
+
+Alternatively, we can write the test as follows:
+
+$$
+H_0: \frac{\sigma_1^2}{\sigma_2^2} = 1 \\\\ H_1: \frac{\sigma_1^2}{\sigma_2^2} \ne 1
+$$
+
+Compute the LR statistic and p-value.
+
+```{r}
+# Computing the LR test statistic
+LR <- 2*(Lval2 - Lval1)
+
+# Compute the p-value
+pval <- 1-pchisq(LR, df = 1)
+cat("P-value = ", pval)
+```
+
+Interpret your test result.
+
+Since we obtained a p-value of 0.0012 << 0.05, we can reject the null hypothesis that the variances are the same across the whole time series. Instead, the data supports that at t = 43 (April 2, 2025), the variance changes.
+
+### Part G
+
+You are uncertain whether the regularity conditions required for the likelihood ratio test to be valid are fully satisfied. To address this concern, you decide to use a simulation-based approach to approximate the distribution of the LR statistic under the null hypothesis.
+
+Starting from Model 1, use the parameter estimate obtained in part (c) to simulate 1000 synthetic time series under the null hypothesis (i.e., assuming no structural break). For each simulated time series, fit both Model 1 and Model 2, compute the LR statistic, and record the values.
+
+Using the resulting empirical distribution of LR statistics, estimate a p-value together with an 95% confidence interval.
+
+What do you conclude? Compare your result to the p-value obtained in the standard LR test and briefly interpret the findings.
+
+```{r}
+set.seed(4302)
+N <- length(X)
+K <- 1000
+tb <- 43
+sim_LR <- rep(NA, K)
+
+for(i in 1:K) {
+  # LR simulated under null hypothesis
+  X_sim <- rnorm(N, mean = 0, sd = sigma_est)
+  
+  # fit model 1 for our simulation
+  fit1 <- optim(par = var(X_sim), fn = Loglike_1, x = X_sim, method = "Brent", lower = 0.0001, upper = 10)
+  L1 <- fit1$value
+  
+  # fit model 2 for our simulation
+  fit2 <- optim(par = c(s2_x, s2_x), fn = Loglike_2, x = X, method = "L-BFGS-B", lower = c(0.0001, 0.0001))
+  L2 <- fit2$value
+    
+  # Compute the LR test stat and save it
+  sim_LR[i] <- 2*(L2-L1)
+}
+
+# Calculating the empirical p-value
+pval <- mean(sim_LR >= LR)
+cat("P-value: ", pval)
+```
+Here we get a p-value that is sufficiently small.
+
+```{r}
+boot.p <- replicate(1000, {
+  samp <- sample(sim_LR, replace = T)
+  mean(samp >= LR)
+})
+ci <- quantile(boot.p, c(0.025, 0.975))
+cat("95% CI for p-value: [", ci[1], ",", ci[2], "] ")
+```
+
+Both p-values seem to be in the acceptable range to reject the null hypothesis in favor of the alternative hypothesis and allow us to conclude that creating a break point for the variance on April 2, 2025 increases model performance for our times series data.
+While the standard LR test yielded a more conclusive test, both tests attributed low probability to chance in terms of the differences in the variances. The simulation test verifies the conclusion that we came to in the standard LR test.
+
