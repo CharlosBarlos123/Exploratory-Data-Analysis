@@ -7,6 +7,8 @@ output: html_document
 
 This project was part of my final project for my final class in the statistics core coursework at my time at Ohio State University. While each step of this exploratory data analysis was framed as a question, the conclusions built from the analysis were still of original thought. This analysis was purely from the logical processes of my mind with no team play, so I am conscious that there may be inconsistencies or mistakes. My intention of including this publicly for colleagues and potential employers is to demonstrate my thought processes and my critical/analytical thinking abilities, but also to show that I am human with shortcomings as well. I hope you, dear reader, find something of use from this analysis, and leave feedback if possible.
 
+# Dutch Adolesence Heights by Region
+
 I am analyzing a subset of the Dutch Growth Study that contains height data of boys from multiple regions in the Netherlands. The data includes the variables age (age in years), hgt (height in cm), and reg (region). I am interested in understanding whether there is a difference in average height between the “north” and “south” regions. These regions are not specifically defined.
 
 The data set is available as a CSV file dutch_boys.csv.
@@ -37,9 +39,9 @@ legend("topleft", legend = levels(as.factor(combined$reg)), col = c("red", "blue
 
 We see that the scatter plot shows us that the relationship between height and age is not linear, as we would expect. I notice that before a certain age, height seems to be generally uniform, with very little deviation from the expected height at that age. After about 4 years of age, we see an increasing amount of variability in height as age increases. We expect this to be so, because during growth spurts, some boys may grow more than others, causing variability in the height of the boys. Additionally, we see no real trends that show differences between the north and the south regions.
 
-## Initial Analysis
+## Permutation Test with Kolmogorov-Smirov Statistic
 
-I was interested in children aged 10 years or older, where growth was considered "significant" to determine any real changed between regions. I used a permutation test based on the Kolmogorov–Smirnov (KS) statistic to assess whether the age distributions in the two regions (north and south) are comparable.
+I am interested in children aged 10 years or older, where growth was considered "significant" to determine any real changed between regions. I will use a permutation test based on the Kolmogorov–Smirnov (KS) statistic to assess whether the age distributions in the two regions (north and south) are comparable.
 
 ```{r}
 y10 <- boys[boys$age >= 10,]
@@ -54,7 +56,7 @@ $$
 H_1:\hat{F_n} \ne \hat{F_s}
 $$
 
-Report the observed KS test statistic.
+Here is the observed KS test statistic.
 
 ```{r}
 north.age <- north$age
@@ -79,7 +81,7 @@ D.obs <- ks.test(north.age, south.age)$statistic
 cat("Observed test statistic: ", D.obs)
 ```
 
-Compute and report the estimated p-value, along with a 95% confidence interval for the p-value, based on the permutation test.
+Then, I will demonstrate the computation of the p-value and 95% confidence interval for the p-value.
 
 ```{r}
 pval <- mean(D.samples >= D.obs)
@@ -102,14 +104,11 @@ quants <- quantile(p.dist, c(0.025, 0.975))
 cat("The 95% confidence interval for the p-value is:", quants)
 ```
 
-Provide a brief interpretation of your result in words.
-
 According to the data, we can reject the null hypothesis that the empirical CDF of the age of boys over 10 years old in the southern region and the age of the boys over 10 years old in the northern region are the same. Instead, we conclude that the data supports that the distributions of the two regions' ages over 10 are not comparable and they follow different distributions.
 
-### Part C
+## Bootstrap Method
 
-Calculate a 95% bootstrap confidence interval for the difference (north minus south) of the means of the height distributions. Make sure to produce a histogram of your bootstrap sampling distribution that clearly indicates the observed difference in means and a 95% confidence interval.
-Answer the question of whether the average heights in the two regions differ. Write down your conclusion in words.
+Next, I will calculate a 95% bootstrap confidence interval for the difference (north minus south) of the means of the height distributions.
 
 $$
 H_0:\mu_n-\mu_s=0 
@@ -133,22 +132,21 @@ quants <- quantile(boot.means, c(0.025, 0.975))
 cat("The 95% Bootstrap Confidence Interval for the difference of means of height is: [", quants[[1]], ",", quants[[2]], "]")
 ```
 
+# EUR/USD Exchange Rate
 
-## Question 2
-
-You are analyzing daily EUR/USD exchange rate data from February 4 to April 15. Let $R_t = log(Y_t)-log(Y_{t-1})$ denote the log return (i.e., the difference of the log exchange rate) on trading day $t$, where $Y_t$ is the exchange rate on day $t$. In this exercise, you will work with the standardized log returns, which are obtained by subtracting the sample mean and dividing by the sample standard deviation of the log returns. That is, the data you analyze will be...
+I am analyzing daily EUR/USD exchange rate data from February 4 to April 15. Let $R_t = log(Y_t)-log(Y_{t-1})$ denote the log return (i.e., the difference of the log exchange rate) on trading day $t$, where $Y_t$ is the exchange rate on day $t$. In this analysis, I will work with the standardized log returns, that is, the data I analyze will be...
 
 $$
 X_t = \frac{R_t-R}{s_R}
 $$
 
-Where $R$ is the sample mean and $s_R$ is the sample standard deviation of $R_t$. Note that $t$ increases only on trading days, so weekends and holidays are skipped. The objective of this exercise is to assess whether there is evidence of a structural change in the dynamics of the log returns on April 2. To investigate this, you will compare two models. Under the assumption of weak form market efficiency, both models assume a $X_t$ is driven by a white noise process but one model allows for a structural break.
+Where $R$ is the sample mean and $s_R$ is the sample standard deviation of $R_t$. Note that $t$ increases only on trading days, so weekends and holidays are skipped. I want to assess whether there is evidence of a structural change in the dynamics of the log returns on April 2. To investigate this, I will compare two models. Under the assumption of weak form market efficiency, both models assume a $X_t$ is driven by a white noise process but one model allows for a structural break.
 
-Throughout this analysis, we treat the data as a regular time series and ignore potential irregularities in the actual timing of observations due to weekends and holidays.
+Throughout this analysis, I treat the data as a regular time series and ignore potential irregularities in the actual timing of observations due to weekends and holidays.
 
 The dataset is available as the CSV file eurusdlr.csv and contains the variables eurusd (exchange rate, $Y_t$), lr_std (standardized log return, $X_t$), date (the date in the format YYYY-mm-dd) and t (time point $t$ of the time series, starting with $t$ = 1).
 
-#### Model 1
+### Model 1
 
 In Model 1, $X_t$ follows a normal white noise process
 
@@ -158,7 +156,7 @@ $$
 
 with parameter $\sigma^2 > 0$
 
-#### Model 2
+### Model 2
 
 Model 2 allows for a change point at April 2, such that the innovation variance may differ before and after the break. Let $t_b$ denote the time point corresponding to April 2. Then we define the process with change point as
 
@@ -168,10 +166,7 @@ $$
 
 with parameters $\sigma^2 > 0$
 
-### Part A
-
-Load and plot the time series of standardized log returns. In the plot, label the x-axis with
-the dates and indicate April 2 in the plot.
+## Data Import 
 
 ```{r}
 # Load in the data set
@@ -189,7 +184,7 @@ text(x = as.Date("2025-04-02"), y = 3,
 
 ### Part B
 
-Using mathematical notation, derive the log-likelihood function for Model 1.
+Using mathematical notation, I will derive the log-likelihood function for Model 1.
 
 $$
 f(X_t) = \frac{1}{\sqrt{2\pi}\sigma}e^{-\frac{x^2}{2\sigma^2}}
@@ -204,11 +199,7 @@ $$
 l(\sigma^2|X_t) = -\frac{n}{2}log(2\pi\sigma^2)-\sum_{i=1}^n\frac{x_i^2}{2\sigma^2}
 $$
 
-
-### Part C
-
-Write an R function to compute the negative log-likelihood for the Model 1. Use optim() to estimate the parameter $\sigma^2$. As a starting value, use the sample variance for $\sigma^2$.
-Report the estimated parameter as well as the log-likelihood value $l_1$ at the maximum likelihood estimate (MLE).
+Here I will write an R function to compute the negative log-likelihood for the Model 1. I use optim() to estimate the parameter $\sigma^2$. As a starting value, I will use the sample variance for $\sigma^2$.
 
 ```{r}
 # Condense standardized log return to a time series object
@@ -246,10 +237,7 @@ plot(Xvec, loglik, type = "l", col = "skyblue2")
 abline(v = sigma_est)
 ```
 
-
-### Part D
-
-Using mathematical notation, derive the log-likelihood function log $L(\sigma_1^2, \sigma_2^2)$ for Model 2.
+Using mathematical notation, I will derive the log-likelihood function log $L(\sigma_1^2, \sigma_2^2)$ for Model 2.
 
 The two portions of the pdf may be bounded and do not intersect, but they are connected sets, so we can treat both as pdfs as such that span the sample space of the variable t.
 Following this logic, finding the likelihood of both $\sigma_1^2$ and $\sigma_2^2$ given x is straightforward.
@@ -274,13 +262,7 @@ $$
 l(\sigma_1^2, \sigma_2^2|x) = \sum_{i=1}^{t_b}[-\frac{1}{2}log(2\pi\sigma_1^2)-\frac{x_i^2}{2\sigma_1^2})]+\sum^n_{i=t_b+1}[-\frac{1}{2}log(2\pi\sigma_2^2)-\frac{x_i^2}{2\sigma_2^2})]
 $$
 
-
-### Part E
-
-Write an R function to compute the negative log-likelihood for the Model 2. Use optim() to estimate the parameters $\sigma^2_1$ and $\sigma^2_2$. As starting values, use the estimate from Model 1 obtained in (c); in particular, start with $\sigma^2_1=\sigma^2_2=\hat{\sigma^2}$
-
-Report your estimated parameters as well as the log-likelihood value $l_2$ at the MLE and
-interpret the estimated parameters.
+Like model 1, I will write an R function to find the negative log-likelihood for model 2.
 
 ```{r}
 # Log-likelihood calculation
@@ -311,11 +293,9 @@ Lval2 <- -ML$value
 cat("MLE estimate of sigma_1 is:", sigma_est1, " and the estimate for sigma_2 is:", sigma_est2, "\n")
 cat("Value of negative log-likelihood:", Lval2, "\n")
 ```
+## Model Comparison
 
-
-### Part F
-
-Use a likelihood ratio (LR) test to test whether introducing the break significantly improves model fit.
+Here, I will use a likelihood ratio (LR) test to test whether introducing the break significantly improves model fit.
 Recall,
 
 $$
@@ -323,8 +303,6 @@ LR = 2(l_2-l_1), LR \sim \chi^2_k
 $$
 
 where $\chi^2_k$ denotes the Chi-square distribution with k degrees of freedom and k is the difference in number of model parameters.
-
-Clearly state the null and alternative hypotheses.
 
 $$
 H_0: \sigma_1^2 = \sigma_2^2 \\\\ H_1: \sigma_1^2\ne\sigma_2^2
@@ -336,8 +314,6 @@ $$
 H_0: \frac{\sigma_1^2}{\sigma_2^2} = 1 \\\\ H_1: \frac{\sigma_1^2}{\sigma_2^2} \ne 1
 $$
 
-Compute the LR statistic and p-value.
-
 ```{r}
 # Computing the LR test statistic
 LR <- 2*(Lval2 - Lval1)
@@ -347,19 +323,13 @@ pval <- 1-pchisq(LR, df = 1)
 cat("P-value = ", pval)
 ```
 
-Interpret your test result.
-
 Since we obtained a p-value of 0.0012 << 0.05, we can reject the null hypothesis that the variances are the same across the whole time series. Instead, the data supports that at t = 43 (April 2, 2025), the variance changes.
 
-### Part G
+## Simulating to Check Assumptions
 
-You are uncertain whether the regularity conditions required for the likelihood ratio test to be valid are fully satisfied. To address this concern, you decide to use a simulation-based approach to approximate the distribution of the LR statistic under the null hypothesis.
+I am uncertain whether the regularity conditions required for the likelihood ratio test to be valid are fully satisfied. To address this concern, I decide to use a simulation-based approach to approximate the distribution of the LR statistic under the null hypothesis.
 
-Starting from Model 1, use the parameter estimate obtained in part (c) to simulate 1000 synthetic time series under the null hypothesis (i.e., assuming no structural break). For each simulated time series, fit both Model 1 and Model 2, compute the LR statistic, and record the values.
-
-Using the resulting empirical distribution of LR statistics, estimate a p-value together with an 95% confidence interval.
-
-What do you conclude? Compare your result to the p-value obtained in the standard LR test and briefly interpret the findings.
+Starting from Model 1, I will use the parameter estimate obtained earlier to simulate 1000 synthetic time series under the null hypothesis (i.e., assuming no structural break).
 
 ```{r}
 set.seed(4302)
@@ -400,6 +370,8 @@ cat("95% CI for p-value: [", ci[1], ",", ci[2], "] ")
 ```
 
 Both p-values seem to be in the acceptable range to reject the null hypothesis in favor of the alternative hypothesis and allow us to conclude that creating a break point for the variance on April 2, 2025 increases model performance for our times series data.
+
 While the standard LR test yielded a more conclusive test, both tests attributed low probability to chance in terms of the differences in the variances. The simulation test verifies the conclusion that we came to in the standard LR test.
+
 
 
