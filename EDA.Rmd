@@ -5,14 +5,15 @@ date: "`r Sys.Date()`"
 output: html_document
 ---
 
-## Question 1
+This project was part of my final project for my final class in the statistics core coursework at my time at Ohio State University. While each step of this exploratory data analysis was framed as a question, the conclusions built from the analysis were still of original thought. This analysis was purely from the logical processes of my mind with no team play, so I am conscious that there may be inconsistencies or mistakes. My intention of including this publicly for colleagues and potential employers is to demonstrate my thought processes and my critical/analytical thinking abilities, but also to show that I am human with shortcomings as well. I hope you, dear reader, find something of use from this analysis, and leave feedback if possible.
 
-You are analyzing a subset of the Dutch Growth Study that contains height data of boys from multiple regions in the Netherlands. The data includes the variables age (age in years), hgt (height in cm), and reg (region). You are interested in understanding whether there is a difference in average height between the “north” and “south” regions.
+I am analyzing a subset of the Dutch Growth Study that contains height data of boys from multiple regions in the Netherlands. The data includes the variables age (age in years), hgt (height in cm), and reg (region). I am interested in understanding whether there is a difference in average height between the “north” and “south” regions. These regions are not specifically defined.
+
 The data set is available as a CSV file dutch_boys.csv.
 
-### Part A
+## Data Import
 
-Read in the dataset and create a new data frame that contains only observations from the “north” and “south” regions. Moreover, remove all rows that have a missing value. Report the number of observations by region. Then, create a scatter plot of height versus age, where points are colored by region. Label all elements of the plot clearly. Interpret the plot.
+Here, I read in the dataset and created a new data frame that contains only observations from the “north” and “south” regions. Moreover, I removed all rows that have a missing value. I reported the number of observations by region. Then, created a scatter plot of height versus age, where points are colored by region.
 
 ```{r}
 # Read in Data
@@ -36,16 +37,14 @@ legend("topleft", legend = levels(as.factor(combined$reg)), col = c("red", "blue
 
 We see that the scatter plot shows us that the relationship between height and age is not linear, as we would expect. I notice that before a certain age, height seems to be generally uniform, with very little deviation from the expected height at that age. After about 4 years of age, we see an increasing amount of variability in height as age increases. We expect this to be so, because during growth spurts, some boys may grow more than others, causing variability in the height of the boys. Additionally, we see no real trends that show differences between the north and the south regions.
 
-### Part B
+## Initial Analysis
 
-For the remainder of this question, restrict your analysis to children aged 10 years or older. Use a permutation test based on the Kolmogorov–Smirnov (KS) statistic to assess whether the age distributions in the two regions (north and south) are comparable.
+I was interested in children aged 10 years or older, where growth was considered "significant" to determine any real changed between regions. I used a permutation test based on the Kolmogorov–Smirnov (KS) statistic to assess whether the age distributions in the two regions (north and south) are comparable.
 
 ```{r}
 y10 <- boys[boys$age >= 10,]
 ```
 
-
-Clearly state the null and alternative hypotheses.
 Let $F_n$ be the CDF for northern boys distribution and $F_s$ be for the southern boys. Additionally, let $\hat{F_n}$ and $\hat{F_s}$ be the empirical CDF respectively. Then,
 
 $$
@@ -402,4 +401,5 @@ cat("95% CI for p-value: [", ci[1], ",", ci[2], "] ")
 
 Both p-values seem to be in the acceptable range to reject the null hypothesis in favor of the alternative hypothesis and allow us to conclude that creating a break point for the variance on April 2, 2025 increases model performance for our times series data.
 While the standard LR test yielded a more conclusive test, both tests attributed low probability to chance in terms of the differences in the variances. The simulation test verifies the conclusion that we came to in the standard LR test.
+
 
